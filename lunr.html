@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns#">
+  <head>
+    <title>Lunr.js Client Side Search Demonstration</title>
+    <meta name="description" content="A bit like Solr, but much smaller and not as bright.">
+    <script src="https://unpkg.com/lunr/lunr.js"></script>
+    <style>
+      header {
+        text-align: right;
+      }
+      main {
+        text-align: center;
+      }
+      #search-dialog-wrapper {
+        margin: 0px;
+          position: absolute;
+          width: 360px;
+          background-color: white;
+      }
+      #search-dialog-wrapper > dialog {
+          margin: 0px;
+          padding: 0px;
+          width: 360px;
+          border: 0px;
+          background-color: #fafafa;
+          outline: 1px solid #e0e0e0;
+      }
+      #search-dialog-wrapper ul {
+        width: 360px;
+        list-style-type: none;
+        padding: 0px;
+        margin: 0px;
+      }
+      #search-dialog-wrapper address {
+        font-weight: 300;
+        font-size: small;
+        font-style: normal;
+      }
+      #search-dialog-wrapper li {
+        padding: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        font-weight: bold;
+        cursor: pointer;
+        outline: 1px solid #e0e0e0;
+      }
+      #search-dialog-wrapper address {
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      #search-dialog-wrapper li:hover {
+        background-color: #eeeeee;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <input type="search" list="results" id="search" placeholder="search">
+    </header>
+    <main>
+      <h1>Lunr.js Search Implementation Working Example</h1>
+    </main>
+    <div id="search-dialog-wrapper">
+      <dialog>
+      </dialog>
+    </div>
+    <script>
+      let dialog = document.querySelector("#search-dialog-wrapper > dialog");
+      (async () => {
+
+        let response = await fetch('https://ronnieroyston.com/index.json');
+        const json = await response.json();
+        const lunrIdx = lunr(function () {
+          this.ref('link')
+          this.field('title')
+          this.field('description')
+          this.field('body')
+          json.forEach(function (doc) {
+            this.add(doc)
+          }, this)
+        })
+        const searchInput = document.getElementById("search");
+        const searchDialogWrapper = document.getElementById("search-dialog-wrapper");
+
+        if(searchInput){
+          searchInput.addEventListener("keypress", async function (e) {
+            if (e.key === 'Enter') {        
+              let results = await lunrIdx.search(searchInput.value);
+              dialog.replaceChildren();
+              let fragment = new DocumentFragment();
+              let nav = document.createElement("nav");
+              let resultsList = document.createElement("ul");
+              results.forEach(function (result){
+                let doc = json.find(o => o.link === result.ref);
+                let addressElement = document.createElement("address");
+                let addressText = document.createTextNode(result.ref);
+                addressElement.appendChild(addressText);
+                let listItemElement = document.createElement("li");
+                let listItemText = document.createTextNode(doc.title);
+                listItemElement.appendChild(listItemText);
+                listItemElement.appendChild(addressElement);
+                resultsList.appendChild(listItemElement);
+              })
+              nav.appendChild(resultsList);
+              fragment.appendChild(nav);
+              dialog.appendChild(fragment);
+              let rect = searchInput.getBoundingClientRect();
+              let x = window.innerWidth - rect.right;
+              searchDialogWrapper.style.top = rect.bottom + "px";
+              searchDialogWrapper.style.right = "0px";
+              attachClickListenerToSearchResults();
+              dialog.show();
+            }
+          });
+          searchInput.addEventListener("focus", function(e){
+            searchInput.value = "";
+          });
+        }
+      })();
+
+      function attachClickListenerToSearchResults() {
+        let searchResultListItems = document.querySelectorAll("#search-dialog-wrapper li");
+        searchResultListItems.forEach(function(listItem){
+          listItem.addEventListener('click', function(e){
+            window.location.href = listItem.querySelector("address").textContent;
+            dialog.close();
+          });
+        })
+      }
+
+      function getValueOfSelectedOption(datalist,val){
+        let response = null;
+        if(datalist instanceof Element || datalist instanceof HTMLDocument){
+          let options = datalist.querySelectorAll("option");
+          options.forEach(function(option){
+            if (option.value === val){
+              response = option.textContent;
+            }
+          })
+        }
+        return response;
+      }
+
+      function isOptionValue(datalist,val){
+        let result = false;
+        if(datalist instanceof Element || datalist instanceof HTMLDocument){
+          let options = datalist.querySelectorAll("option");
+          options.forEach(function(option){
+            if (option.textContent === val){
+              result = true;
+            }
+          })
+        }
+        return result;
+      }
+
+      document.addEventListener('click', (event) => {
+        if(document.querySelector("dialog")){
+          let dialog = document.querySelector("dialog");
+          const withinBoundaries = event.composedPath().includes(dialog)
+          if (!withinBoundaries) {
+
+            dialog.close();
+
+          }    
+        }
+      })
+
+      document.onkeydown = function(evt) {
+        evt = evt || window.event;
+        var isEscape = false;
+        if ("key" in evt) {
+          isEscape = (evt.key === "Escape" || evt.key === "Esc");
+        } else {
+          isEscape = (evt.keyCode === 27);
+        }
+        if (isEscape) {
+          if(document.querySelector("dialog")){
+            document.querySelector("dialog").close();
+          }
+        }
+      };      
+    </script>
+  </body>
+</html>
