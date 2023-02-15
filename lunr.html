@@ -130,40 +130,12 @@
         })
       }
 
-      function getValueOfSelectedOption(datalist,val){
-        let response = null;
-        if(datalist instanceof Element || datalist instanceof HTMLDocument){
-          let options = datalist.querySelectorAll("option");
-          options.forEach(function(option){
-            if (option.value === val){
-              response = option.textContent;
-            }
-          })
-        }
-        return response;
-      }
-
-      function isOptionValue(datalist,val){
-        let result = false;
-        if(datalist instanceof Element || datalist instanceof HTMLDocument){
-          let options = datalist.querySelectorAll("option");
-          options.forEach(function(option){
-            if (option.textContent === val){
-              result = true;
-            }
-          })
-        }
-        return result;
-      }
-
       document.addEventListener('click', (event) => {
         if(document.querySelector("dialog")){
           let dialog = document.querySelector("dialog");
           const withinBoundaries = event.composedPath().includes(dialog)
           if (!withinBoundaries) {
-
             dialog.close();
-
           }    
         }
       })
